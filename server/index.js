@@ -12,6 +12,28 @@ app.use(express.json({ limit: '1mb' }));
 const clientDir = path.join(__dirname, '..', 'client');
 app.use(express.static(clientDir));
 
+function buildSummary() {
+  const totalSpent = store.customers.reduce((sum, customer) => sum + customer.spent, 0);
+  const count = store.customers.length;
+  return {
+    count,
+    totalSpent,
+    avgSpent: count ? Math.round(totalSpent / count) : 0
+  };
+}
+
+function buildInsights() {
+  const metrics = store.getMetrics();
+  const campaignCount = store.campaigns.length;
+
+  return [
+    `There are ${store.customers.length} seeded customers ready for the demo.`,
+    campaignCount ? `The dashboard currently has ${campaignCount} campaign${campaignCount === 1 ? '' : 's'} in play.` : 'No campaigns are live yet, so the first launch will populate the funnel.',
+    metrics.sent ? `Delivery is tracking at ${Math.round((metrics.delivered / Math.max(metrics.sent, 1)) * 100)}%.` : 'Send a campaign to start generating funnel metrics.',
+    metrics.clicked ? 'Click activity is showing up, which means the CTA is doing its job.' : 'The creative still needs a launch before click data can appear.'
+  ];
+}
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'crm-backend' });
 });
@@ -25,7 +47,8 @@ app.get('/api/bootstrap', (req, res) => {
     events: store.events,
     metrics,
     funnel,
-    summary: { count: store.customers.length, totalSpent: 0, avgSpent: 0 }
+    summary: buildSummary(),
+    insights: buildInsights()
   });
 });
 
@@ -43,6 +66,10 @@ app.get('/api/events', (req, res) => {
 
 app.get('/api/metrics', (req, res) => {
   res.json({ metrics: store.getMetrics(), funnel: store.getFunnel() });
+});
+
+app.get('/api/insights', (req, res) => {
+  res.json({ insights: buildInsights() });
 });
 
 app.post('/api/segment/preview', (req, res) => {
