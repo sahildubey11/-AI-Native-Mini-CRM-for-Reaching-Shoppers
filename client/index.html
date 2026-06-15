@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>Campaign Copilot — AI-first CRM</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="backdrop backdrop-a"></div>
+  <div class="backdrop backdrop-b"></div>
+
+  <div class="shell">
+    <aside class="rail glass">
+      <div class="brand">
+        <div class="brand-mark">CC</div>
+        <div>
+          <p>Campaign Copilot</p>
+          <span>AI-first CRM demo</span>
+        </div>
+      </div>
+
+      <div class="rail-card">
+        <span class="eyebrow">Launch status</span>
+        <strong id="headlineStatus">Premium reactivation running</strong>
+        <p id="headlineStatusCopy">Launch flow, analytics, and simulator callbacks are wired end-to-end.</p>
+      </div>
+
+      <nav class="mini-nav">
+        <a href="#segment">AI segment</a>
+        <a href="#message">Message</a>
+        <a href="#campaign">Campaign</a>
+        <a href="#analytics">Analytics</a>
+        <a href="#diagram">Architecture</a>
+      </nav>
+
+      <div class="rail-stats">
+        <div>
+          <span>Audience</span>
+          <strong id="railAudienceCount">0</strong>
+        </div>
+        <div>
+          <span>Recommended</span>
+          <strong id="railChannel">WhatsApp</strong>
+        </div>
+        <div>
+          <span>Funnel</span>
+          <strong id="railFunnel">0%</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="hero glass">
+        <div class="hero-copy">
+          <span class="eyebrow">Assignment scope, tightened</span>
+          <h1>AI Campaign Copilot</h1>
+          <p>
+            A polished, human-feeling demo where a marketer talks to the product, the product builds the audience,
+            drafts the message, recommends the channel, and launches through a separate channel simulator service.
+          </p>
+          <div class="hero-actions">
+            <button class="button primary" id="analyzeHeroBtn">Analyze segment</button>
+            <button class="button ghost" id="launchHeroBtn">Launch campaign</button>
+          </div>
+        </div>
+        <div class="hero-panel">
+          <div class="hero-chip-row">
+            <span class="pill">Next.js-ready architecture</span>
+            <span class="pill">React Query mindset</span>
+            <span class="pill">Simulator callbacks</span>
+          </div>
+          <div class="hero-metrics" id="heroMetrics"></div>
+        </div>
+      </section>
+
+      <section class="layout two-up">
+        <article class="glass card" id="segment">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 4</span>
+              <h2>AI Segment Builder</h2>
+            </div>
+            <span class="status-pill live">Live parsing</span>
+          </div>
+          <label class="field-label" for="segmentPrompt">Prompt</label>
+          <textarea id="segmentPrompt" rows="4">Show customers who spent more than ₹5000 but haven't ordered in 30 days and send them a discount offer.</textarea>
+          <div class="card-actions">
+            <button class="button primary" id="analyzeSegmentBtn">Generate segment</button>
+            <button class="button ghost" id="loadExampleBtn">Use example</button>
+          </div>
+          <div class="split-grid">
+            <div class="sub-card">
+              <span class="eyebrow">Segment preview</span>
+              <div id="segmentRules" class="rule-list"></div>
+            </div>
+            <div class="sub-card">
+              <span class="eyebrow">Audience count</span>
+              <strong id="audienceCount" class="big-number">0</strong>
+              <p id="audienceSummary">Waiting for a segment prompt.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>City</th>
+                  <th>Spent</th>
+                  <th>Last order</th>
+                </tr>
+              </thead>
+              <tbody id="audiencePreview"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="glass card" id="message">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 5 + 6</span>
+              <h2>Message + Channel</h2>
+            </div>
+            <span class="status-pill">AI drafted</span>
+          </div>
+          <div class="recommendation-card">
+            <span class="eyebrow">Recommended channel</span>
+            <div class="recommendation-row">
+              <strong id="recommendedChannel">WhatsApp</strong>
+              <span id="channelScore">92 score</span>
+            </div>
+            <p id="channelReason">Short reactivation offers perform well on WhatsApp for high-value, inactive shoppers.</p>
+          </div>
+          <label class="field-label" for="messagePrompt">Message prompt</label>
+          <textarea id="messagePrompt" rows="3">Generate a WhatsApp message for inactive premium customers.</textarea>
+          <div class="card-actions">
+            <button class="button primary" id="generateMessageBtn">Generate message</button>
+            <button class="button ghost" id="regenerateMessageBtn">Regenerate</button>
+          </div>
+          <label class="field-label" for="messageBox">Campaign message</label>
+          <textarea id="messageBox" rows="8"></textarea>
+          <div class="count-row">
+            <span>Character count</span>
+            <strong id="messageChars">0</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="layout three-up">
+        <article class="glass card" id="campaign">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 7</span>
+              <h2>Create campaign</h2>
+            </div>
+            <span class="status-pill">Draft ready</span>
+          </div>
+          <label class="field-label" for="campaignName">Campaign name</label>
+          <input id="campaignName" type="text" value="Premium Reactivation Sprint" />
+          <label class="field-label" for="channelPicker">Channel</label>
+          <select id="channelPicker">
+            <option>WhatsApp</option>
+            <option>Email</option>
+            <option>SMS</option>
+          </select>
+          <div class="card-actions">
+            <button class="button primary" id="saveCampaignBtn">Save campaign</button>
+            <button class="button ghost" id="launchCampaignBtn">Launch</button>
+          </div>
+          <div class="mini-stack">
+            <div>
+              <span class="eyebrow">Campaign id</span>
+              <strong id="campaignId">New draft</strong>
+            </div>
+            <div>
+              <span class="eyebrow">Status</span>
+              <strong id="campaignStatus">draft</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass card" id="imports">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 3</span>
+              <h2>CSV ingestion</h2>
+            </div>
+            <span class="status-pill">Demo data accepted</span>
+          </div>
+          <div class="import-block">
+            <label class="field-label" for="customersCsv">Customers CSV</label>
+            <input id="customersCsv" type="file" accept=".csv,text/csv" />
+            <button class="button ghost full" id="importCustomersBtn">Upload customers CSV</button>
+          </div>
+          <div class="import-block">
+            <label class="field-label" for="ordersCsv">Orders CSV</label>
+            <input id="ordersCsv" type="file" accept=".csv,text/csv" />
+            <button class="button ghost full" id="importOrdersBtn">Upload orders CSV</button>
+          </div>
+          <div id="importSummary" class="summary-box">No import yet.</div>
+        </article>
+
+        <article class="glass card" id="analytics">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 9</span>
+              <h2>Analytics dashboard</h2>
+            </div>
+            <span class="status-pill">Live metrics</span>
+          </div>
+          <div id="metricsGrid" class="metrics-grid"></div>
+          <div class="chart-box">
+            <div class="chart-title">Delivery funnel</div>
+            <div id="funnelChart" class="funnel-chart"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="layout two-up">
+        <article class="glass card">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 10</span>
+              <h2>AI insights</h2>
+            </div>
+            <button class="button ghost compact" id="insightsBtn">Generate insights</button>
+          </div>
+          <div id="insightsCard" class="insights-card"></div>
+        </article>
+
+        <article class="glass card">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 8</span>
+              <h2>Channel simulator feed</h2>
+            </div>
+            <span class="status-pill live">Callbacks active</span>
+          </div>
+          <div id="eventFeed" class="event-feed"></div>
+        </article>
+      </section>
+
+      <section class="layout two-up">
+        <article class="glass card" id="diagram">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Phase 12</span>
+              <h2>Architecture diagram</h2>
+            </div>
+          </div>
+          <div class="diagram">
+            <div class="diagram-node">Next.js / UI shell</div>
+            <div class="diagram-arrow">↓</div>
+            <div class="diagram-node">CRM backend</div>
+            <div class="diagram-arrow">↓</div>
+            <div class="diagram-node">Mongo-ready data layer</div>
+          </div>
+          <div class="diagram-subgrid">
+            <div class="diagram-side">
+              <div class="diagram-node small">CRM backend</div>
+              <div class="diagram-arrow side">→</div>
+              <div class="diagram-node small">Channel simulator</div>
+            </div>
+            <div class="diagram-side">
+              <div class="diagram-node small">Simulator</div>
+              <div class="diagram-arrow side">→</div>
+              <div class="diagram-node small">Receipt callback API</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass card">
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">Status feed</span>
+              <h2>What the demo is doing</h2>
+            </div>
+          </div>
+          <ul class="checklist">
+            <li>Natural-language audience creation</li>
+            <li>AI message generation and regeneration</li>
+            <li>Separate channel simulator with callback receipts</li>
+            <li>Campaign analytics and insights card</li>
+            <li>Responsive glassmorphism UI with dark mode</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div id="toasts" class="toasts"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "mini-crm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node server/index.js",
+    "start:crm": "node server/index.js",
+    "start:sim": "node simulator/index.js",
+    "dev": "concurrently -k -n crm,sim -c cyan,magenta \"nodemon server/index.js\" \"nodemon simulator/index.js\"",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "nodemon": "^2.0.22"
+  }
+}
