@@ -2,22 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-const {
-  state,
-  audienceForFilters,
-  summarizeAudience,
-  createCampaign,
-  recordReceipt,
-  getMetrics,
-  getFunnel,
-  getInsights,
-  importCustomers,
-  importOrders,
-  serializeBootstrap,
-  launchCampaign,
-  addEvent
-} = require('./store');
-const { parseSegmentPrompt, generateCampaignMessage, recommendChannel, summarizeInsights } = require('./ai');
+const store = require('./store');
+const ai = require('./ai');
 
 const app = express();
 app.use(cors());
@@ -26,82 +12,81 @@ app.use(express.json({ limit: '1mb' }));
 const clientDir = path.join(__dirname, '..', 'client');
 app.use(express.static(clientDir));
 
-function countByStatus(audience, status) {
-  return audience.filter((customer) => status(customer)).length;
-}
-
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'crm-backend' });
 });
 
 app.get('/api/bootstrap', (req, res) => {
-  res.json(serializeBootstrap());
+  const metrics = store.getMetrics();
+  const funnel = store.getFunnel();
+  res.json({
+    customers: store.customers,
+    campaigns: store.campaigns,
+    events: store.events,
+    metrics,
+    funnel,
+    summary: { count: store.customers.length, totalSpent: 0, avgSpent: 0 }
+  });
 });
 
 app.get('/api/customers', (req, res) => {
-  res.json(state.customers);
+  res.json(store.customers);
 });
 
 app.get('/api/campaigns', (req, res) => {
-  res.json(state.campaigns);
+  res.json(store.campaigns);
 });
 
 app.get('/api/events', (req, res) => {
-  res.json(state.events);
+  res.json(store.events);
 });
 
 app.get('/api/metrics', (req, res) => {
-  res.json({ metrics: getMetrics(), funnel: getFunnel() });
-});
-
-app.get('/api/insights', (req, res) => {
-  res.json({ insights: summarizeInsights(getMetrics(), state.campaigns) });
+  res.json({ metrics: store.getMetrics(), funnel: store.getFunnel() });
 });
 
 app.post('/api/segment/preview', (req, res) => {
   const { prompt = '' } = req.body;
-  const parsed = parseSegmentPrompt(prompt);
-  const audience = audienceForFilters(parsed.filters);
+  const parsed = ai.parseSegment(prompt);
+  const audience = store.filterAudience(parsed.minSpent, parsed.inactiveDays);
+  
   res.json({
-    ...parsed,
+    rules: parsed.rules,
+    label: parsed.label,
     audienceCount: audience.length,
-    audienceSummary: summarizeAudience(audience),
     audience: audience.slice(0, 6)
   });
 });
 
 app.post('/api/message/generate', (req, res) => {
-  const { segmentPrompt = '', audience = [], tone = 'warm' } = req.body;
-  res.json(generateCampaignMessage({ segmentPrompt, audience, tone }));
+  const { audience = [] } = req.body;
+  res.json(ai.generateMessage(audience));
 });
 
 app.post('/api/channel/recommend', (req, res) => {
-  const { segmentPrompt = '', audience = [] } = req.body;
-  res.json(recommendChannel({ segmentPrompt, audience }));
+  const { audience = [] } = req.body;
+  res.json(ai.recommendChannel(audience));
 });
 
 app.post('/api/campaigns', (req, res) => {
-  const { name, segment, message, channel, audienceCount = 0, filters = {} } = req.body;
+  const { name, segment, message, channel } = req.body;
   if (!name || !segment || !message || !channel) {
     return res.status(400).json({ error: 'name, segment, message, and channel are required' });
   }
-  const campaign = createCampaign({ name, segment, message, channel, audienceCount, filters });
+  const campaign = store.createCampaign(name, segment, message, channel);
   res.status(201).json(campaign);
 });
 
 app.post('/api/campaign/send', async (req, res) => {
   const { campaignId } = req.body;
-  const campaign = state.campaigns.find((item) => item.id === campaignId);
+  const campaign = store.campaigns.find(c => c.id === campaignId);
   if (!campaign) {
     return res.status(404).json({ error: 'campaign not found' });
   }
 
-  const audience = audienceForFilters(campaign.filters);
-  campaign.audienceCount = audience.length;
-  launchCampaign(campaignId);
-  addEvent('campaign.launching', campaignId, 'system', `Launching ${campaign.name}`);
-
+  campaign.status = 'launching';
   const simulatorUrl = process.env.SIMULATOR_URL || 'http://localhost:4100/simulate';
+  
   try {
     const response = await fetch(simulatorUrl, {
       method: 'POST',
@@ -109,37 +94,22 @@ app.post('/api/campaign/send', async (req, res) => {
       body: JSON.stringify({
         campaignId,
         channel: campaign.channel,
-        audience,
+        customers: store.customers,
         callbackUrl: process.env.CRM_CALLBACK_URL || 'http://localhost:4000/receipt'
       })
     });
     const payload = await response.json();
-    return res.json({ ok: true, campaignId, audienceCount: audience.length, simulator: payload });
+    return res.json({ ok: true, campaignId, simulator: payload });
   } catch (error) {
-    campaign.status = 'launch-failed';
-    addEvent('campaign.error', campaignId, 'system', 'Simulator unreachable, launch paused', { error: error.message });
+    campaign.status = 'failed';
     return res.status(502).json({ error: 'simulator unavailable', details: error.message });
   }
 });
 
 app.post('/receipt', (req, res) => {
-  const receipt = recordReceipt(req.body);
-  if (!receipt) {
-    return res.status(404).json({ error: 'campaign not found' });
-  }
-  res.json({ ok: true, receipt });
-});
-
-app.post('/api/import/customers', (req, res) => {
-  const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
-  const created = importCustomers(rows);
-  res.json({ created: created.length, rows: created });
-});
-
-app.post('/api/import/orders', (req, res) => {
-  const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
-  const created = importOrders(rows);
-  res.json({ created: created.length, rows: created });
+  const { campaignId, customerId, customerName, status } = req.body;
+  store.recordEvent(customerId, campaignId, status);
+  res.json({ ok: true, received: true });
 });
 
 app.get('*', (req, res) => {
