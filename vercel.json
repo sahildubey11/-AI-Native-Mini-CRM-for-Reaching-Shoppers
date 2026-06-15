@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ai-native-mini-crm-for-reaching-shoppers-doqs.onrender.com/api/:path*"
+    },
+    {
+      "source": "/receipt",
+      "destination": "https://ai-native-mini-crm-for-reaching-shoppers-doqs.onrender.com/receipt"
+    }
+  ]
+}
